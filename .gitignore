@@ -1,6 +1,6 @@
-# Data — file quá lớn, không commit
-etl/data/*.gz
-etl/data/*.jsonl
+# Data
+data/*.gz
+data/*.jsonl
 
 # Java / Maven
 backend/target/
