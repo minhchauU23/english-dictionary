@@ -1,0 +1,27 @@
+# Data — file quá lớn, không commit
+etl/data/*.gz
+etl/data/*.jsonl
+
+# Java / Maven
+backend/target/
+backend/.mvn/
+*.class
+*.jar
+!**/test/**/*.jar
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.env
