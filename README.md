@@ -1,4 +1,4 @@
-# 📚 English Dictionary | Mars Tran
+# 📚 English Dictionary | Mars Tran (@minhchauU23)
 
 ## 🧠 Introduction
 
