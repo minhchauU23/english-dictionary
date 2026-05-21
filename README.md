@@ -87,11 +87,25 @@ This project uses real-world lexical dataset from:
 - Elasticsearch (planned / optional)
 
 ### DevOps
-- Docker & Docker Compose
-- GitHub Actions (CI/CD)
-- Cloud deployment (VPS / Cloud server)
 
 ---
+
+## ⚙️ How to Run
+
+### Step 1: Setup data
+- Download raw data from [kaikki.org](https://kaikki.org) and place it into: english-dictionary/data/
+- Create a `.env` file in the project root:
+```env
+Create a .env file in the project root:
+MYSQL_ROOT_PASSWORD=your_root_password
+MYSQL_USER=your_username
+MYSQL_PASSWORD=your_password
+MYSQL_DATABASE=your_db_name
+```
+- Run docker
+```bash
+docker compose --profile db-importer up db-importer
+```
 
 ## 📡 API cURL Sample
 
