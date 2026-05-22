@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import mysql.connector
+import requests
 
 # ── Config ────────────────────────────────────────────
 JSONL_PATH = os.getenv("JSONL_PATH", "data/raw-wiktextract-data.jsonl.gz")
@@ -22,7 +23,42 @@ DB_CONFIG  = {
     "database": os.getenv("MYSQL_DATABASE", "dictionary"),
     "charset":  "utf8mb4",
 }
+DATA_URL = os.getenv(
+    "DATA_URL",
+    "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
+)
 BATCH_SIZE = 500  # số rows insert mỗi lần executemany
+
+def ensure_dataset(path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    if os.path.exists(path):
+        log(f"Dataset already exists: {path}")
+        return
+
+    log(f"Downloading dataset from {DATA_URL} ...")
+
+    response = requests.get(DATA_URL, stream=True)
+    response.raise_for_status()
+
+    total = int(response.headers.get("content-length", 0))
+    downloaded = 0
+    chunk_size = 1024 * 1024  # 1MB
+
+    with open(path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            if chunk:
+                f.write(chunk)
+                downloaded += len(chunk)
+
+                if total > 0:
+                    percent = downloaded * 100 / total
+
+                    # chỉ log mỗi 1%
+                    if int(percent) % 2 == 0:
+                        log(f"Downloading... {percent:.1f}% ({downloaded/1e6:.0f} MB)")
+
+    log("Download completed.")
 
 # ── Helpers ───────────────────────────────────────────
 def log(msg):
@@ -47,7 +83,7 @@ def chunks(lst, n):
 # ── Parse helpers ─────────────────────────────────────
 def parse_pronunciation(entry_id, sounds):
     """
-    sounds là list, mỗi item có thể có ipa, audio, mp3_url, tags.
+    sounds is list sound, for each item have ipa, audio, mp3_url, tags.
     Gom ipa + audio của cùng region vào 1 row.
     """
     rows = []
@@ -77,6 +113,7 @@ def is_already_seeded(cursor):
 
 # ── Main ETL ──────────────────────────────────────────
 def main():
+    ensure_dataset(JSONL_PATH)
     if not os.path.exists(JSONL_PATH):
         log(f"File not found: {JSONL_PATH}")
         log("Đặt file JSONL.gz vào data/ rồi chạy lại.")
@@ -309,8 +346,10 @@ def main():
     conn.close()
 
     log("=== ETL hoàn tất ===")
+   
     log("Chạy lệnh sau để export dump:")
     log("  mysqldump -u dict_user -pdict_pass dictionary | gzip > data/seed.sql.gz")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
