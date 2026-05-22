@@ -1,29 +1,27 @@
+# ── BASE ──────────────────────────────────────────────
 services:
+
   mysql:
     image: mysql:8.0
-    container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-    ports:
-      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
 
   db-importer:
-    build: 
+    build:
       context: ./etl
-      dockerfile: Dockerfile.yml
-    container_name: db-importer
+      dockerfile: Dockerfile
     volumes:
       - ./data:/data
     environment:
@@ -34,11 +32,32 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       JSONL_PATH: /data/raw-wiktextract-data.jsonl.gz
     depends_on:
-      mysql: 
+      mysql:
         condition: service_healthy
     profiles:
-      - db-importer
+      - seed
     restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - backend
 
 volumes:
   mysql_data:

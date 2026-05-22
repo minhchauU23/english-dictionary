@@ -1,0 +1,36 @@
+# ── TEST override ─────────────────────────────────────
+services:
+
+  mysql:
+    container_name: mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_TEST_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_TEST_USER}
+      MYSQL_PASSWORD: ${MYSQL_TEST_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_TEST_DATABASE}
+    ports:
+      - "3308:3306"
+
+  db-importer:
+    container_name: db-importer-test
+    environment:
+      MYSQL_USER: ${MYSQL_TEST_USER}
+      MYSQL_PASSWORD: ${MYSQL_TEST_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_TEST_DATABASE}
+
+  backend:
+    container_name: backend-test
+    ports:
+      - "8082:8080"
+    environment:
+      DB_USERNAME: ${MYSQL_TEST_USER}
+      DB_PASSWORD: ${MYSQL_TEST_PASSWORD}
+      DB_NAME: ${MYSQL_TEST_DATABASE}
+      SPRING_PROFILES_ACTIVE: test
+    restart: "no"
+
+  # frontend:
+  #   container_name: frontend-test
+  #   ports:
+  #     - "8889:80"
+  #   restart: "no"
