@@ -1,0 +1,60 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Tear down existing test containers
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml down -v --remove-orphans
+        continue-on-error: true
+
+      - name: Build & start test environment
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+
+      - name: Chờ backend-test healthy
+        shell: pwsh
+        run: |
+          $timeout = 120
+          $elapsed = 0
+          do {
+            Start-Sleep -Seconds 5
+            $elapsed += 5
+            try {
+              $response = Invoke-WebRequest -Uri http://localhost:8082/actuator/health -UseBasicParsing -TimeoutSec 3
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Backend healthy sau ${elapsed}s"
+                break
+              }
+            } catch {}
+            Write-Host "Waiting... ($elapsed/$timeout s)"
+          } while ($elapsed -lt $timeout)
+          if ($elapsed -ge $timeout) {
+            docker compose -f docker-compose.yml -f docker-compose.test.yml logs backend-test
+            exit 1
+          }
+
+      - name: Chạy Maven tests
+        run: docker exec backend-test mvn test
+        shell: cmd
+
+      - name: In logs nếu fail
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml logs
+        shell: cmd
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml down -v
+        shell: cmd
