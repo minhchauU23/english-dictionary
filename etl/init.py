@@ -133,6 +133,23 @@ def main():
     cursor.execute("SET unique_checks = 0")
     conn.autocommit = False
 
+    # ── SEED ADMIN + ROLE ───────────────────────────────
+    def seed_admin_and_roles():
+        log("Seeding admin + roles ...")
+
+        # role
+        cursor.execute("INSERT IGNORE INTO role (id, name) VALUES ('ADMIN', 'ADMIN'), ('USER', 'USER')")
+
+        # admin user (id = 1 cố định cho đơn giản)
+        cursor.execute("INSERT IGNORE INTO user (id, email, password_hash, first_name, last_name) VALUES (1, 'admin@system.local', 'N/A', 'Admin', 'System')")
+
+        # assign role admin
+        cursor.execute("INSERT IGNORE INTO user_role (user_id, role_id) VALUES (1, 'ADMIN')")
+
+        conn.commit()
+        log("Admin + roles seeded.")
+
+    seed_admin_and_roles()
     # ── PASS 1: word, entry, pronunciation, sense, example, word_form ──
     log("=== PASS 1: word / entry / pronunciation / sense / example / word_form ===")
 
@@ -147,6 +164,7 @@ def main():
     buf_word_form    = []
 
     # ID counters (auto_increment ở DB nhưng mình tự quản để build FK)
+    user_id   = 1
     word_id   = 1
     entry_id  = 1
     pron_id   = 1
@@ -157,22 +175,22 @@ def main():
     def flush_pass1():
         if buf_word:
             cursor.executemany(
-                "INSERT IGNORE INTO word (id, spelling) VALUES (%s, %s)", buf_word)
+                "INSERT IGNORE INTO word (id, created_by, updated_by, spelling) VALUES (%s, %s, %s, %s)", buf_word)
         if buf_entry:
             cursor.executemany(
-                "INSERT IGNORE INTO entry (id, word_id, pos, entry_order) VALUES (%s,%s,%s,%s)", buf_entry)
+                "INSERT IGNORE INTO entry (id, word_id, pos, entry_order, created_by, updated_by) VALUES (%s,%s,%s,%s,%s, %s)", buf_entry)
         if buf_pronunciation:
             cursor.executemany(
-                "INSERT INTO pronunciation (id, entry_id, ipa, region, audio_url) VALUES (%s,%s,%s,%s,%s)", buf_pronunciation)
+                "INSERT INTO pronunciation (id, created_by, updated_by, entry_id, ipa, region, audio_url) VALUES (%s,%s,%s,%s,%s,%s,%s)", buf_pronunciation)
         if buf_sense:
             cursor.executemany(
-                "INSERT INTO sense (id, entry_id, definition, sense_order) VALUES (%s,%s,%s,%s)", buf_sense)
+                "INSERT INTO sense (id, created_by, updated_by, entry_id, definition, sense_order) VALUES (%s,%s,%s,%s,%s,%s)", buf_sense)
         if buf_example:
             cursor.executemany(
-                "INSERT INTO example (id, sense_id, text) VALUES (%s,%s,%s)", buf_example)
+                "INSERT INTO example (id, created_by, updated_by, sense_id, text) VALUES (%s,%s,%s,%s,%s)", buf_example)
         if buf_word_form:
             cursor.executemany(
-                "INSERT INTO word_form (id, entry_id, form, tags) VALUES (%s,%s,%s,%s)", buf_word_form)
+                "INSERT INTO word_form (id, created_by, updated_by, entry_id, form, tags) VALUES (%s,%s,%s,%s,%s,%s)", buf_word_form)
         conn.commit()
         buf_word.clear(); buf_entry.clear(); buf_pronunciation.clear()
         buf_sense.clear(); buf_example.clear(); buf_word_form.clear()
@@ -199,7 +217,7 @@ def main():
             # ── word ──
             if spelling not in word_spelling_to_id:
                 word_spelling_to_id[spelling] = word_id
-                buf_word.append((word_id, spelling))
+                buf_word.append((word_id, user_id, user_id, spelling))
                 word_id += 1
 
             current_word_id = word_spelling_to_id[spelling]
@@ -212,12 +230,12 @@ def main():
 
             # ── entry ──
             current_entry_id = entry_id
-            buf_entry.append((entry_id, current_word_id, pos, entry_order))
+            buf_entry.append((entry_id, current_word_id, pos, entry_order, user_id, user_id))
             entry_id += 1
 
             # ── pronunciation ──
             for row in parse_pronunciation(current_entry_id, obj.get("sounds", [])):
-                buf_pronunciation.append((pron_id,) + row)
+                buf_pronunciation.append((pron_id, user_id, user_id) + row)
                 pron_id += 1
 
             # ── sense ──
@@ -228,14 +246,14 @@ def main():
                     continue
 
                 current_sense_id = sense_id
-                buf_sense.append((sense_id, current_entry_id, definition, s_order))
+                buf_sense.append((sense_id, user_id, user_id, current_entry_id, definition, s_order))
                 sense_id += 1
 
                 # examples
                 for ex in sense.get("examples", []):
                     text = ex.get("text", "").strip()
                     if text:
-                        buf_example.append((example_id, current_sense_id, text))
+                        buf_example.append((example_id, user_id, user_id, current_sense_id, text))
                         example_id += 1
 
             # ── word_form ──
@@ -243,7 +261,7 @@ def main():
                 form = form_obj.get("form", "").strip()
                 tags = ",".join(form_obj.get("tags", []))
                 if form:
-                    buf_word_form.append((form_id, current_entry_id, form, tags or None))
+                    buf_word_form.append((form_id, user_id, user_id, current_entry_id, form, tags or None))
                     form_id += 1
 
             total_entries += 1
@@ -280,8 +298,8 @@ def main():
         if buf_relation:
             cursor.executemany(
                 """INSERT IGNORE INTO sense_relation
-                   (id, sense_id, related_word_id, relation_type)
-                   VALUES (%s,%s,%s,%s)""",
+                   (id, sense_id, related_word_id, relation_type, created_by, updated_by)
+                   VALUES (%s,%s,%s,%s,%s,%s)""",
                 buf_relation
             )
             conn.commit()
@@ -329,7 +347,7 @@ def main():
                         if not related_word_id:
                             skipped += 1
                             continue
-                        buf_relation.append((relation_id, current_sense_id, related_word_id, rel_type))
+                        buf_relation.append((relation_id, current_sense_id, related_word_id, rel_type, user_id, user_id))
                         relation_id += 1
 
             if len(buf_relation) >= BATCH_SIZE:
