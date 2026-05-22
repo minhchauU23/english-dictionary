@@ -3,6 +3,8 @@ services:
 
   mysql:
     container_name: mysql-test
+    volumes:
+      - mysql_test_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_TEST_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_TEST_USER}
@@ -34,3 +36,5 @@ services:
   #   ports:
   #     - "8889:80"
   #   restart: "no"
+volumes:
+  mysql_test_data:

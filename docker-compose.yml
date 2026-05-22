@@ -4,10 +4,9 @@ services:
   mysql:
     image: mysql:8.0
     volumes:
-      - mysql_data:/var/lib/mysql
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -46,5 +45,4 @@ services:
   #   depends_on:
   #     - backend
 
-volumes:
-  mysql_data:
+

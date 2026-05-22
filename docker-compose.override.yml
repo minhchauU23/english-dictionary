@@ -3,6 +3,8 @@ services:
 
   mysql:
     container_name: mysql-dev
+    volumes:
+      - mysql_data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
@@ -36,3 +38,5 @@ services:
   #   environment:
   #     VITE_API_URL: http://localhost:8081
   #   restart: "no"
+volumes:
+  mysql_data:
