@@ -37,7 +37,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-
   # frontend:
   #   build:
   #     context: ./frontend
