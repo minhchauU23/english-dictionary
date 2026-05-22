@@ -9,6 +9,12 @@ jobs:
   deploy:
     runs-on: self-hosted
 
+    env: 
+      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PROD_ROOT_PASSWORD }} 
+      MYSQL_USER: ${{ secrets.MYSQL_PROD_USER }} 
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PROD_PASSWORD }} 
+      MYSQL_DATABASE: ${{ secrets.MYSQL_PROD_DATABASE }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
