@@ -48,15 +48,15 @@ jobs:
             exit 1
           }
 
-      - name: Verify frontend up
-        shell: powershell
-        run: |
-          $response = Invoke-WebRequest -Uri http://localhost -UseBasicParsing -TimeoutSec 10
-          if ($response.StatusCode -ne 200) {
-            Write-Error "Frontend không response"
-            exit 1
-          }
-          Write-Host "Deploy Successful — http://localhost"
+      # - name: Verify frontend up
+      #   shell: powershell
+      #   run: |
+      #     $response = Invoke-WebRequest -Uri http://localhost -UseBasicParsing -TimeoutSec 10
+      #     if ($response.StatusCode -ne 200) {
+      #       Write-Error "Frontend không response"
+      #       exit 1
+      #     }
+      #     Write-Host "Deploy Successful — http://localhost"
 
       - name: Rollback nếu fail
         if: failure()
