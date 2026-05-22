@@ -1,0 +1,42 @@
+# ── DEV override — docker compose up ──
+services:
+
+  mysql:
+    container_name: mysql-dev
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3307:3306"
+
+  db-importer:
+    container_name: db-importer-prod
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+
+  backend:
+    container_name: backend-dev
+    ports:
+      - "8081:8080"
+    environment:
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      SPRING_PROFILES_ACTIVE: dev
+    restart: "no"
+
+  # frontend:
+  #   container_name: frontend-dev
+  #   ports:
+  #     - "8888:80"
+  #   environment:
+  #     VITE_API_URL: http://localhost:8081
+  #   restart: "no"
+volumes:
+  mysql_data:

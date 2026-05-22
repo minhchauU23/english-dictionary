@@ -70,6 +70,11 @@ def parse_pronunciation(entry_id, sounds):
             rows.append((entry_id, data["ipa"], region, data["audio_url"]))
     return rows
 
+def is_already_seeded(cursor):
+    cursor.execute("SELECT COUNT(*) FROM word")
+    count = cursor.fetchone()[0]
+    return count > 0
+
 # ── Main ETL ──────────────────────────────────────────
 def main():
     if not os.path.exists(JSONL_PATH):
@@ -79,6 +84,12 @@ def main():
 
     conn   = connect_with_retry(DB_CONFIG)
     cursor = conn.cursor()
+
+    if is_already_seeded(cursor):
+        log("DB already seeded → EXIT ETL")
+        cursor.close()
+        conn.close()
+        sys.exit(0)
 
     # Tắt FK checks và autocommit để insert nhanh hơn
     cursor.execute("SET FOREIGN_KEY_CHECKS = 0")

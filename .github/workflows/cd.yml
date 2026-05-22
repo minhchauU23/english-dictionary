@@ -1,0 +1,64 @@
+name: CD — Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    env: 
+      MYSQL_PROD_ROOT_PASSWORD: ${{ secrets.MYSQL_PROD_ROOT_PASSWORD }} 
+      MYSQL_PROD_USER: ${{ secrets.MYSQL_PROD_USER }} 
+      MYSQL_PROD_PASSWORD: ${{ secrets.MYSQL_PROD_PASSWORD }} 
+      MYSQL_PROD_DATABASE: ${{ secrets.MYSQL_PROD_DATABASE }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Tear down production cũ
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml down --remove-orphans
+        continue-on-error: true
+
+      - name: Build & deploy production
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+      - name: Waiting backend-prod healthy
+        shell: powershell
+        run: |
+          $timeout = 120
+          $elapsed = 0
+          do {
+            Start-Sleep -Seconds 5
+            $elapsed += 5
+            try {
+              $response = Invoke-WebRequest -Uri http://localhost:8080/actuator/health -UseBasicParsing -TimeoutSec 3
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Backend healthy sau ${elapsed}s"
+                break
+              }
+            } catch {}
+            Write-Host "Waiting... ($elapsed/$timeout s)"
+          } while ($elapsed -lt $timeout)
+          if ($elapsed -ge $timeout) {
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml logs backend
+            exit 1
+          }
+
+      # - name: Verify frontend up
+      #   shell: powershell
+      #   run: |
+      #     $response = Invoke-WebRequest -Uri http://localhost -UseBasicParsing -TimeoutSec 10
+      #     if ($response.StatusCode -ne 200) {
+      #       Write-Error "Frontend không response"
+      #       exit 1
+      #     }
+      #     Write-Host "Deploy Successful — http://localhost"
+
+      - name: Rollback nếu fail
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml down -v
+        shell: cmd
