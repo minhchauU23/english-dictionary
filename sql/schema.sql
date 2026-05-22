@@ -10,7 +10,12 @@ CREATE TABLE IF NOT EXISTS word (
   id             BIGINT NOT NULL AUTO_INCREMENT,
   spelling       VARCHAR(200) NOT NULL,
   frequency_rank INT NULL,
-  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
   PRIMARY KEY (id),
   UNIQUE KEY uq_word_spelling (spelling)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -21,6 +26,12 @@ CREATE TABLE IF NOT EXISTS entry (
   word_id     BIGINT NOT NULL,
   pos         VARCHAR(50) NOT NULL,
   entry_order INT NOT NULL DEFAULT 1,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+
   PRIMARY KEY (id),
   UNIQUE KEY uq_entry (word_id, pos, entry_order),
   CONSTRAINT fk_entry_word FOREIGN KEY (word_id) REFERENCES word(id)
@@ -33,6 +44,12 @@ CREATE TABLE IF NOT EXISTS pronunciation (
   ipa       VARCHAR(200) NULL,
   region    VARCHAR(50) NULL,
   audio_url VARCHAR(500) NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+
   PRIMARY KEY (id),
   CONSTRAINT fk_pronunciation_entry FOREIGN KEY (entry_id) REFERENCES entry(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -43,6 +60,12 @@ CREATE TABLE IF NOT EXISTS sense (
   entry_id    BIGINT NOT NULL,
   definition  TEXT NOT NULL,
   sense_order INT NOT NULL DEFAULT 1,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+
   PRIMARY KEY (id),
   CONSTRAINT fk_sense_entry FOREIGN KEY (entry_id) REFERENCES entry(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -52,6 +75,12 @@ CREATE TABLE IF NOT EXISTS example (
   id       BIGINT NOT NULL AUTO_INCREMENT,
   sense_id BIGINT NOT NULL,
   text     TEXT NOT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,  
+
   PRIMARY KEY (id),
   CONSTRAINT fk_example_sense FOREIGN KEY (sense_id) REFERENCES sense(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -62,6 +91,12 @@ CREATE TABLE IF NOT EXISTS sense_relation (
   sense_id        BIGINT NOT NULL,
   related_word_id BIGINT NOT NULL,
   relation_type   VARCHAR(20) NOT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+
   PRIMARY KEY (id),
   UNIQUE KEY uq_sense_relation (sense_id, related_word_id, relation_type),
   KEY idx_relation_sense (sense_id),
@@ -78,6 +113,12 @@ CREATE TABLE IF NOT EXISTS word_form (
   entry_id BIGINT NOT NULL,
   form     TEXT NOT NULL,
   tags     TEXT NULL,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+
   PRIMARY KEY (id),
   KEY idx_word_form_entry (entry_id),
   CONSTRAINT fk_word_form_entry FOREIGN KEY (entry_id) REFERENCES entry(id)
@@ -89,10 +130,42 @@ CREATE TABLE IF NOT EXISTS word_form (
 CREATE TABLE IF NOT EXISTS user (
   id BIGINT NOT NULL AUTO_INCREMENT,
   email VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  display_name VARCHAR(100),
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100),
+  password_hash TEXT,
+  dob DATE,
+  gender  TINYINT COMMENT '0=unknown, 1=male, 2=female',
   preferred_lang VARCHAR(5),
+
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
   PRIMARY KEY (id),
   UNIQUE KEY uq_user_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS role (
+  id VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_role (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  role_id VARCHAR(255) NOT NULL,
+  
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT,
+  updated_by BIGINT,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_user_role_user FOREIGN KEY (user_id) REFERENCES user(id),
+  CONSTRAINT fk_user_role_role FOREIGN KEY (role_id) REFERENCES role(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
