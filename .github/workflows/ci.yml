@@ -13,10 +13,10 @@ jobs:
     runs-on: self-hosted
 
     env: 
-      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_TEST_ROOT_PASSWORD }} 
-      MYSQL_USER: ${{ secrets.MYSQL_TEST_USER }} 
-      MYSQL_PASSWORD: ${{ secrets.MYSQL_TEST_PASSWORD }} 
-      MYSQL_DATABASE: ${{ secrets.MYSQL_TEST_DATABASE }}
+      MYSQL_TEST_ROOT_PASSWORD: ${{ secrets.MYSQL_TEST_ROOT_PASSWORD }} 
+      MYSQL_TEST_USER: ${{ secrets.MYSQL_TEST_USER }} 
+      MYSQL_TEST_PASSWORD: ${{ secrets.MYSQL_TEST_PASSWORD }} 
+      MYSQL_TEST_DATABASE: ${{ secrets.MYSQL_TEST_DATABASE }}
 
     steps:
       - name: Checkout code
